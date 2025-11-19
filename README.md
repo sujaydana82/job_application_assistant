@@ -58,7 +58,7 @@ cd job_application_assistant
 Windows
 ```bash
 python -m venv job_venv
-job_venv\Scripts\activate
+source job_venv\Scripts\activate
 ```
 macOS/Linux
 ```bash
