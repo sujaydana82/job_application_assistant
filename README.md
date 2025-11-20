@@ -11,8 +11,10 @@ job_application_assistant/
 ├── utils/
 │   ├── __init__.py                # Package initialization
 │   ├── ai_helpers.py              # Core AI assistance logic
-│   └── file_processor.py          # File processing utilities
+│   ├── file_processor.py          # File processing utilities
+│   └── pdf_generator              # pdf generating utilities
 └── generated_files/               # Output directory for saved files
+└── .gitignore                     # to ignore tracking a file in git
 ```
 
 ### ✨ Features
@@ -76,4 +78,4 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 #### 5. Application will launch on browser http://localhost:8501
-#### 6. Update your documents(CV,JD), give linkedin profile URL  OR paste job decription and click on Generate Application Materials
+#### 6. Upload your documents(CV, JD, linkedin about), give linkedin profile URL  OR paste job decription and click on Generate Application Materials

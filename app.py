@@ -47,40 +47,45 @@ def main():
         st.header("About")
         st.info("""
         This tool helps you:
-        - 📝 Tailor your CV to specific jobs
+        - 📝 Improve your CV for specific jobs
+        - 🔗 Optimize your LinkedIn profile
         - 💌 Generate motivation letters
-        - 🎯 Create interview preparation guides
+        - 🎯 Prepare for interviews
         """)
         
         st.header("Instructions")
         st.write("""
         1. Upload your current CV
         2. Provide the job description
-        3. Generate tailored materials
-        4. Edit the generated content if needed
-        5. Download the results
+        3. Add your LinkedIn profile URL
+        4. Paste your LinkedIn About section (optional)
+        5. Generate improvement suggestions
+        6. Download the results
         """)
     
     # Initialize session state
     if 'edited_content' not in st.session_state:
         st.session_state.edited_content = {
-            'updated_cv': '',
+            'cv_improvements': '',
+            'linkedin_suggestions': '',
             'motivation_letter': '',
-            'interview_cheatsheet': ''
+            'interview_preparation': ''
         }
     
     if 'last_saved_files' not in st.session_state:
         st.session_state.last_saved_files = {
-            'cv_txt': None,
-            'cv_pdf': None,
-            'letter_txt': None,
-            'letter_pdf': None,
-            'cheatsheet_txt': None,
-            'cheatsheet_pdf': None
+            'cv_improvements_txt': None,
+            'cv_improvements_pdf': None,
+            'linkedin_suggestions_txt': None,
+            'linkedin_suggestions_pdf': None,
+            'motivation_letter_txt': None,
+            'motivation_letter_pdf': None,
+            'interview_preparation_txt': None,
+            'interview_preparation_pdf': None
         }
     
     # Main content
-    tab1, tab2, tab3 = st.tabs(["📄 Document Upload", "🛠️ Generated Materials", "⚙️ Settings"])
+    tab1, tab2, tab3 = st.tabs(["📄 Document Upload", "🛠️ Improvement Suggestions", "⚙️ Settings"])
     
     with tab1:
         col1, col2 = st.columns([1, 1])
@@ -106,10 +111,19 @@ def main():
             
             # LinkedIn URL
             linkedin_url = st.text_input(
-                "LinkedIn Profile URL (Optional)",
+                "LinkedIn Profile URL",
                 placeholder="https://linkedin.com/in/yourprofile",
-                help="For additional context (future enhancement)",
+                help="For LinkedIn profile improvement suggestions",
                 key="linkedin_url"
+            )
+            
+            # LinkedIn About Section
+            st.subheader("LinkedIn About Section (Optional)")
+            linkedin_about = st.text_area(
+                "Paste your LinkedIn About section for optimization:",
+                height=150,
+                placeholder="Paste your current LinkedIn About section here for personalized optimization suggestions...",
+                key="linkedin_about"
             )
             
             # Direct JD input
@@ -124,7 +138,7 @@ def main():
             
             # Generate button
             generate_btn = st.button(
-                "🚀 Generate Application Materials", 
+                "🚀 Generate Improvement Suggestions", 
                 type="primary",
                 use_container_width=True,
                 key="generate_btn"
@@ -155,13 +169,21 @@ def main():
                     st.write("**Job Description:** Text input")
                     with st.expander("Job Description Preview (First 500 characters)"):
                         st.text(jd_text[:500] + "..." if len(jd_text) > 500 else jd_text)
+            
+            if linkedin_url:
+                st.write(f"**LinkedIn URL:** {linkedin_url}")
+            
+            if linkedin_about:
+                st.write(f"**LinkedIn About:** {len(linkedin_about)} characters provided")
+                with st.expander("LinkedIn About Preview"):
+                    st.text(linkedin_about[:300] + "..." if len(linkedin_about) > 300 else linkedin_about)
     
     with tab2:
         if 'generated_materials' not in st.session_state:
             st.session_state.generated_materials = None
         
         if generate_btn and (cv_file or jd_file or jd_text):
-            with st.spinner("🔄 Analyzing documents and generating materials..."):
+            with st.spinner("🔄 Analyzing documents and generating improvement suggestions..."):
                 try:
                     # Process files
                     cv_text = ""
@@ -173,77 +195,124 @@ def main():
                     if jd_file and not jd_text:
                         jd_text_final = file_processor.process_uploaded_file(jd_file)
                     
-                    # Generate materials
-                    updated_cv = assistant.generate_updated_cv(cv_text, jd_text_final, linkedin_url)
+                    # Generate improvement suggestions using NEW methods
+                    cv_improvements = assistant.generate_cv_improvements(cv_text, jd_text_final, linkedin_url)
+                    
+                    # Generate LinkedIn suggestions if About section is provided
+                    if linkedin_about:
+                        linkedin_suggestions = assistant.generate_linkedin_suggestions(linkedin_about, jd_text_final, cv_text)
+                    else:
+                        linkedin_suggestions = assistant.generate_linkedin_improvements(cv_text, jd_text_final, linkedin_url)
+                    
                     motivation_letter = assistant.generate_motivation_letter(cv_text, jd_text_final, linkedin_url)
-                    interview_cheatsheet = assistant.generate_interview_cheatsheet(jd_text_final, cv_text)
+                    interview_preparation = assistant.generate_interview_preparation(jd_text_final, cv_text)
                     
                     # Store in session state
                     st.session_state.generated_materials = {
-                        'updated_cv': updated_cv,
+                        'cv_improvements': cv_improvements,
+                        'linkedin_suggestions': linkedin_suggestions,
                         'motivation_letter': motivation_letter,
-                        'interview_cheatsheet': interview_cheatsheet,
+                        'interview_preparation': interview_preparation,
                         'timestamp': datetime.now()
                     }
                     
                     # Initialize edited content with generated materials
                     st.session_state.edited_content = {
-                        'updated_cv': updated_cv,
+                        'cv_improvements': cv_improvements,
+                        'linkedin_suggestions': linkedin_suggestions,
                         'motivation_letter': motivation_letter,
-                        'interview_cheatsheet': interview_cheatsheet
+                        'interview_preparation': interview_preparation
                     }
                     
-                    st.success("✅ Materials generated successfully!")
+                    st.success("✅ Improvement suggestions generated successfully!")
                     
                 except Exception as e:
                     st.error(f"Error generating materials: {str(e)}")
         
-        # Display generated materials with editing capability
+        # Display improvement suggestions with editing capability
         if st.session_state.generated_materials:
-            doc_tab1, doc_tab2, doc_tab3 = st.tabs([
-                "📝 Enhanced CV", 
+            doc_tab1, doc_tab2, doc_tab3, doc_tab4 = st.tabs([
+                "📝 CV Improvements", 
+                "🔗 LinkedIn Suggestions",
                 "💌 Motivation Letter", 
-                "🎯 Interview Cheatsheet"
+                "🎯 Interview Prep"
             ])
             
             with doc_tab1:
-                st.subheader("Enhanced CV Recommendations")
+                st.subheader("CV Improvement Suggestions")
                 
-                # Editable text area for CV
-                edited_cv = st.text_area(
-                    "Edit your enhanced CV content:",
-                    value=st.session_state.edited_content['updated_cv'],
+                # Editable text area for CV improvements
+                edited_cv_improvements = st.text_area(
+                    "Edit your CV improvement suggestions:",
+                    value=st.session_state.edited_content['cv_improvements'],
                     height=400,
-                    key="cv_editor"
+                    key="cv_improvements_editor"
                 )
                 
                 # Update session state with edited content
-                st.session_state.edited_content['updated_cv'] = edited_cv
+                st.session_state.edited_content['cv_improvements'] = edited_cv_improvements
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("💾 Save CV as TXT", key="save_cv_txt"):
-                        filename = f"enhanced_cv_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                        filepath = assistant.save_as_txt(st.session_state.edited_content['updated_cv'], filename)
-                        st.session_state.last_saved_files['cv_txt'] = filepath
+                    if st.button("💾 Save CV Improvements as TXT", key="save_cv_improvements_txt"):
+                        filename = f"cv_improvements_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                        filepath = assistant.save_as_txt(st.session_state.edited_content['cv_improvements'], filename)
+                        st.session_state.last_saved_files['cv_improvements_txt'] = filepath
                         st.success(f"Saved as: {filepath}")
                 
                 with col2:
-                    if st.button("💾 Save CV as PDF", key="save_cv_pdf"):
-                        filename = f"enhanced_cv_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                        filepath = assistant.save_as_pdf(st.session_state.edited_content['updated_cv'], filename)
-                        st.session_state.last_saved_files['cv_pdf'] = filepath
+                    if st.button("💾 Save CV Improvements as PDF", key="save_cv_improvements_pdf"):
+                        filename = f"cv_improvements_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                        filepath = assistant.save_as_pdf(st.session_state.edited_content['cv_improvements'], filename)
+                        st.session_state.last_saved_files['cv_improvements_pdf'] = filepath
                         st.success(f"Saved as: {filepath}")
                 
                 # Show last saved files
-                if st.session_state.last_saved_files['cv_txt'] or st.session_state.last_saved_files['cv_pdf']:
+                if st.session_state.last_saved_files['cv_improvements_txt'] or st.session_state.last_saved_files['cv_improvements_pdf']:
                     with st.expander("📁 Last Saved Files"):
-                        if st.session_state.last_saved_files['cv_txt']:
-                            st.write(f"TXT: `{st.session_state.last_saved_files['cv_txt']}`")
-                        if st.session_state.last_saved_files['cv_pdf']:
-                            st.write(f"PDF: `{st.session_state.last_saved_files['cv_pdf']}`")
+                        if st.session_state.last_saved_files['cv_improvements_txt']:
+                            st.write(f"TXT: `{st.session_state.last_saved_files['cv_improvements_txt']}`")
+                        if st.session_state.last_saved_files['cv_improvements_pdf']:
+                            st.write(f"PDF: `{st.session_state.last_saved_files['cv_improvements_pdf']}`")
             
             with doc_tab2:
+                st.subheader("LinkedIn Optimization Suggestions")
+                
+                # Editable text area for LinkedIn suggestions
+                edited_linkedin_suggestions = st.text_area(
+                    "Edit your LinkedIn suggestions:",
+                    value=st.session_state.edited_content['linkedin_suggestions'],
+                    height=400,
+                    key="linkedin_suggestions_editor"
+                )
+                
+                # Update session state with edited content
+                st.session_state.edited_content['linkedin_suggestions'] = edited_linkedin_suggestions
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("💾 Save LinkedIn Suggestions as TXT", key="save_linkedin_suggestions_txt"):
+                        filename = f"linkedin_suggestions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                        filepath = assistant.save_as_txt(st.session_state.edited_content['linkedin_suggestions'], filename)
+                        st.session_state.last_saved_files['linkedin_suggestions_txt'] = filepath
+                        st.success(f"Saved as: {filepath}")
+                
+                with col2:
+                    if st.button("💾 Save LinkedIn Suggestions as PDF", key="save_linkedin_suggestions_pdf"):
+                        filename = f"linkedin_suggestions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                        filepath = assistant.save_as_pdf(st.session_state.edited_content['linkedin_suggestions'], filename)
+                        st.session_state.last_saved_files['linkedin_suggestions_pdf'] = filepath
+                        st.success(f"Saved as: {filepath}")
+                
+                # Show last saved files
+                if st.session_state.last_saved_files['linkedin_suggestions_txt'] or st.session_state.last_saved_files['linkedin_suggestions_pdf']:
+                    with st.expander("📁 Last Saved Files"):
+                        if st.session_state.last_saved_files['linkedin_suggestions_txt']:
+                            st.write(f"TXT: `{st.session_state.last_saved_files['linkedin_suggestions_txt']}`")
+                        if st.session_state.last_saved_files['linkedin_suggestions_pdf']:
+                            st.write(f"PDF: `{st.session_state.last_saved_files['linkedin_suggestions_pdf']}`")
+            
+            with doc_tab3:
                 st.subheader("Tailored Motivation Letter")
                 
                 # Editable text area for motivation letter
@@ -262,60 +331,60 @@ def main():
                     if st.button("💾 Save Letter as TXT", key="save_letter_txt"):
                         filename = f"motivation_letter_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
                         filepath = assistant.save_as_txt(st.session_state.edited_content['motivation_letter'], filename)
-                        st.session_state.last_saved_files['letter_txt'] = filepath
+                        st.session_state.last_saved_files['motivation_letter_txt'] = filepath
                         st.success(f"Saved as: {filepath}")
                 
                 with col2:
                     if st.button("💾 Save Letter as PDF", key="save_letter_pdf"):
                         filename = f"motivation_letter_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
                         filepath = assistant.save_as_pdf(st.session_state.edited_content['motivation_letter'], filename)
-                        st.session_state.last_saved_files['letter_pdf'] = filepath
+                        st.session_state.last_saved_files['motivation_letter_pdf'] = filepath
                         st.success(f"Saved as: {filepath}")
                 
                 # Show last saved files
-                if st.session_state.last_saved_files['letter_txt'] or st.session_state.last_saved_files['letter_pdf']:
+                if st.session_state.last_saved_files['motivation_letter_txt'] or st.session_state.last_saved_files['motivation_letter_pdf']:
                     with st.expander("📁 Last Saved Files"):
-                        if st.session_state.last_saved_files['letter_txt']:
-                            st.write(f"TXT: `{st.session_state.last_saved_files['letter_txt']}`")
-                        if st.session_state.last_saved_files['letter_pdf']:
-                            st.write(f"PDF: `{st.session_state.last_saved_files['letter_pdf']}`")
+                        if st.session_state.last_saved_files['motivation_letter_txt']:
+                            st.write(f"TXT: `{st.session_state.last_saved_files['motivation_letter_txt']}`")
+                        if st.session_state.last_saved_files['motivation_letter_pdf']:
+                            st.write(f"PDF: `{st.session_state.last_saved_files['motivation_letter_pdf']}`")
             
-            with doc_tab3:
+            with doc_tab4:
                 st.subheader("Interview Preparation Guide")
                 
-                # Editable text area for interview cheatsheet
-                edited_cheatsheet = st.text_area(
-                    "Edit your interview cheatsheet:",
-                    value=st.session_state.edited_content['interview_cheatsheet'],
+                # Editable text area for interview preparation
+                edited_interview_prep = st.text_area(
+                    "Edit your interview preparation guide:",
+                    value=st.session_state.edited_content['interview_preparation'],
                     height=400,
-                    key="cheatsheet_editor"
+                    key="interview_prep_editor"
                 )
                 
                 # Update session state with edited content
-                st.session_state.edited_content['interview_cheatsheet'] = edited_cheatsheet
+                st.session_state.edited_content['interview_preparation'] = edited_interview_prep
                 
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("💾 Save Cheatsheet as TXT", key="save_cheatsheet_txt"):
-                        filename = f"interview_cheatsheet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                        filepath = assistant.save_as_txt(st.session_state.edited_content['interview_cheatsheet'], filename)
-                        st.session_state.last_saved_files['cheatsheet_txt'] = filepath
+                    if st.button("💾 Save Interview Prep as TXT", key="save_interview_prep_txt"):
+                        filename = f"interview_preparation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                        filepath = assistant.save_as_txt(st.session_state.edited_content['interview_preparation'], filename)
+                        st.session_state.last_saved_files['interview_preparation_txt'] = filepath
                         st.success(f"Saved as: {filepath}")
                 
                 with col2:
-                    if st.button("💾 Save Cheatsheet as PDF", key="save_cheatsheet_pdf"):
-                        filename = f"interview_cheatsheet_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                        filepath = assistant.save_as_pdf(st.session_state.edited_content['interview_cheatsheet'], filename)
-                        st.session_state.last_saved_files['cheatsheet_pdf'] = filepath
+                    if st.button("💾 Save Interview Prep as PDF", key="save_interview_prep_pdf"):
+                        filename = f"interview_preparation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                        filepath = assistant.save_as_pdf(st.session_state.edited_content['interview_preparation'], filename)
+                        st.session_state.last_saved_files['interview_preparation_pdf'] = filepath
                         st.success(f"Saved as: {filepath}")
                 
                 # Show last saved files
-                if st.session_state.last_saved_files['cheatsheet_txt'] or st.session_state.last_saved_files['cheatsheet_pdf']:
+                if st.session_state.last_saved_files['interview_preparation_txt'] or st.session_state.last_saved_files['interview_preparation_pdf']:
                     with st.expander("📁 Last Saved Files"):
-                        if st.session_state.last_saved_files['cheatsheet_txt']:
-                            st.write(f"TXT: `{st.session_state.last_saved_files['cheatsheet_txt']}`")
-                        if st.session_state.last_saved_files['cheatsheet_pdf']:
-                            st.write(f"PDF: `{st.session_state.last_saved_files['cheatsheet_pdf']}`")
+                        if st.session_state.last_saved_files['interview_preparation_txt']:
+                            st.write(f"TXT: `{st.session_state.last_saved_files['interview_preparation_txt']}`")
+                        if st.session_state.last_saved_files['interview_preparation_pdf']:
+                            st.write(f"PDF: `{st.session_state.last_saved_files['interview_preparation_pdf']}`")
             
             # Add a reset button to revert to original generated content
             st.markdown("---")
@@ -323,9 +392,10 @@ def main():
             with col2:
                 if st.button("🔄 Reset to Original Generated Content", type="secondary", key="reset_content"):
                     st.session_state.edited_content = {
-                        'updated_cv': st.session_state.generated_materials['updated_cv'],
+                        'cv_improvements': st.session_state.generated_materials['cv_improvements'],
+                        'linkedin_suggestions': st.session_state.generated_materials['linkedin_suggestions'],
                         'motivation_letter': st.session_state.generated_materials['motivation_letter'],
-                        'interview_cheatsheet': st.session_state.generated_materials['interview_cheatsheet']
+                        'interview_preparation': st.session_state.generated_materials['interview_preparation']
                     }
                     st.success("Content reset to original generated versions!")
     
@@ -337,18 +407,19 @@ def main():
         with col1:
             st.info("""
             **Current Features:**
-            - Local file processing
-            - Basic text analysis
-            - Template-based generation
+            - Comprehensive CV vs JD skill matching
+            - LinkedIn About section optimization
+            - Personalized headline suggestions
+            - Motivation letter generation
+            - Interview preparation guide
             - File export (TXT/PDF)
-            - Editable content before saving
             """)
         
         with col2:
             st.warning("""
             **Future Enhancements:**
             - AI integration (OpenAI/Ollama)
-            - LinkedIn profile parsing
+            - LinkedIn profile scraping
             - Advanced templates
             - Application tracking
             """)
@@ -366,9 +437,10 @@ def main():
                         shutil.rmtree('generated_files')
                     os.makedirs('generated_files', exist_ok=True)
                     st.session_state.last_saved_files = {
-                        'cv_txt': None, 'cv_pdf': None,
-                        'letter_txt': None, 'letter_pdf': None,
-                        'cheatsheet_txt': None, 'cheatsheet_pdf': None
+                        'cv_improvements_txt': None, 'cv_improvements_pdf': None,
+                        'linkedin_suggestions_txt': None, 'linkedin_suggestions_pdf': None,
+                        'motivation_letter_txt': None, 'motivation_letter_pdf': None,
+                        'interview_preparation_txt': None, 'interview_preparation_pdf': None
                     }
                     st.success("Generated files cleared!")
                 except Exception as e:
